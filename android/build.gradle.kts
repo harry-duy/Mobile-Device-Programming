@@ -1,15 +1,10 @@
-apply(plugin = "com.google.gms.google-services")
 buildscript {
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath("com.google.gms:google-services:4.3.15")
-    }
-    plugins {
-        // ... các plugin khác giữ nguyên
-        id("com.google.gms.google-services") version "4.3.15" apply false
+        classpath("com.google.gms:google-services:4.4.0")
     }
 }
 
@@ -19,6 +14,7 @@ allprojects {
         mavenCentral()
     }
 }
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
@@ -29,6 +25,7 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
