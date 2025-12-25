@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'product_list_screen.dart';
 import 'order_list_screen.dart';
 import 'cart_screen.dart';
+import 'profile_screen.dart';
+
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
