@@ -5,14 +5,11 @@ import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
 import 'costomer_app/screens/login_screen.dart';
 import 'costomer_app/screens/customer_home_screen.dart';
+import 'admin_app/screens/admin_home_screen.dart'; // <--- 1. THÊM DÒNG NÀY
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-
-  // FOR DEVELOPMENT ONLY - Remove in production
-  // await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-
   runApp(const MyApp());
 }
 
@@ -48,13 +45,15 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, authProvider, _) {
         if (authProvider.status == AuthStatus.uninitialized) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (authProvider.isAuthenticated) {
+          // 2. THÊM LOGIC KIỂM TRA QUYỀN ADMIN
+          if (authProvider.isAdmin) {
+            return const AdminHomeScreen();
+          }
           return const CustomerHomeScreen();
         }
 

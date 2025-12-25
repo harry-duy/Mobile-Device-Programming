@@ -30,16 +30,6 @@ class UserProfile {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'email': email,
-      'name': name,
-      'phone': phone,
-      'role': role.name,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
-  }
 }
 
 class AuthService {
@@ -48,11 +38,9 @@ class AuthService {
 
   // Get current user
   User? get currentUser => _auth.currentUser;
-
-  // Auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Sign up with email & password
+  // ĐĂNG KÝ (Logic đã sửa để lưu tên ngay lập tức)
   Future<UserCredential?> signUp({
     required String email,
     required String password,
@@ -61,13 +49,19 @@ class AuthService {
     UserRole role = UserRole.customer,
   }) async {
     try {
-      // Create user
+      // 1. Tạo user
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Create user profile in Firestore
+      // 2. CẬP NHẬT TÊN NGAY (Quan trọng)
+      if (credential.user != null) {
+        await credential.user!.updateDisplayName(name);
+        await credential.user!.reload(); // Load lại user để cập nhật
+      }
+
+      // 3. Lưu vào Firestore (Nếu lỗi ở đây thì tên vẫn đã được lưu ở bước 2)
       await _firestore.collection('users').doc(credential.user!.uid).set({
         'email': email,
         'name': name,
@@ -76,16 +70,13 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Update display name
-      await credential.user!.updateDisplayName(name);
-
       return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
   }
 
-  // Sign in with email & password
+  // ĐĂNG NHẬP
   Future<UserCredential?> signIn({
     required String email,
     required String password,
@@ -100,18 +91,17 @@ class AuthService {
     }
   }
 
-  // Sign out
+  // ĐĂNG XUẤT
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
-  // Get user profile
+  // LẤY PROFILE
   Future<UserProfile?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
-        return UserProfile.fromFirestore(
-            doc.data() as Map<String, dynamic>, uid);
+        return UserProfile.fromFirestore(doc.data() as Map<String, dynamic>, uid);
       }
       return null;
     } catch (e) {
@@ -120,25 +110,7 @@ class AuthService {
     }
   }
 
-  // Update user profile
-  Future<void> updateProfile({
-    required String uid,
-    String? name,
-    String? phone,
-  }) async {
-    final updates = <String, dynamic>{};
-    if (name != null) updates['name'] = name;
-    if (phone != null) updates['phone'] = phone;
-
-    if (updates.isNotEmpty) {
-      await _firestore.collection('users').doc(uid).update(updates);
-      if (name != null) {
-        await _auth.currentUser?.updateDisplayName(name);
-      }
-    }
-  }
-
-  // Reset password
+  // RESET PASS
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -147,33 +119,15 @@ class AuthService {
     }
   }
 
-  // Check if user is admin
-  Future<bool> isAdmin(String uid) async {
-    final profile = await getUserProfile(uid);
-    return profile?.role == UserRole.admin;
-  }
-
-  // Handle auth exceptions
+  // XỬ LÝ LỖI
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
-      case 'weak-password':
-        return 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.';
-      case 'email-already-in-use':
-        return 'Email này đã được sử dụng.';
-      case 'user-not-found':
-        return 'Không tìm thấy tài khoản với email này.';
-      case 'wrong-password':
-        return 'Mật khẩu không đúng.';
-      case 'invalid-email':
-        return 'Email không hợp lệ.';
-      case 'user-disabled':
-        return 'Tài khoản đã bị vô hiệu hóa.';
-      case 'too-many-requests':
-        return 'Quá nhiều lần thử. Vui lòng thử lại sau.';
-      case 'operation-not-allowed':
-        return 'Phương thức đăng nhập này chưa được kích hoạt.';
-      default:
-        return 'Đã xảy ra lỗi: ${e.message}';
+      case 'email-already-in-use': return 'Email này đã được sử dụng.';
+      case 'user-not-found': return 'Không tìm thấy tài khoản.';
+      case 'wrong-password': return 'Mật khẩu không đúng.';
+      case 'invalid-email': return 'Email không hợp lệ.';
+      case 'weak-password': return 'Mật khẩu quá yếu.';
+      default: return 'Lỗi: ${e.message}';
     }
   }
 }

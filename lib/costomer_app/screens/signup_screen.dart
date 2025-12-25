@@ -32,6 +32,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _handleSignUp() async {
+    // 1. KIỂM TRA THÔNG TIN ĐĂNG KÝ (VALIDATION)
+    // Lệnh này kích hoạt toàn bộ các validator trong các TextFormField bên dưới
     if (!_formKey.currentState!.validate()) return;
 
     if (!_agreeToTerms) {
@@ -46,6 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    // Gọi hàm đăng ký từ Provider
     final success = await authProvider.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -55,17 +58,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!mounted) return;
 
+    // 2. XỬ LÝ KẾT QUẢ
     if (success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const CustomerHomeScreen(),
+      // A. Đăng ký thành công
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký thành công! Vui lòng đăng nhập.'),
+          backgroundColor: Colors.green, // Màu xanh lá báo thành công
+          duration: Duration(seconds: 2),
         ),
       );
+
+      // Chờ 1 chút để user đọc thông báo rồi quay về Login
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        Navigator.pop(context); // Quay lại màn hình Login
+      }
     } else {
+      // B. Đăng ký thất bại (Hiện dòng đỏ như bạn thấy)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Đăng ký thất bại'),
+          content: Text(authProvider.errorMessage ?? 'Đăng ký thất bại. Kiểm tra lại thông tin.'),
           backgroundColor: Colors.red,
         ),
       );
