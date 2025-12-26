@@ -261,9 +261,6 @@ class OrderListScreen extends StatelessWidget {
         return Icons.access_time;
       case OrderStatus.accepted:
         return Icons.check;
-      case OrderStatus.preparing:
-        return Icons.kitchen;
-      case OrderStatus.readyToShip:
         return Icons.inventory;
       case OrderStatus.shipping:
         return Icons.delivery_dining;

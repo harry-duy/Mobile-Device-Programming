@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 enum OrderStatus {
   pending,        // Chờ xác nhận
   accepted,       // Đã xác nhận
-  preparing,      // Đang chuẩn bị
-  readyToShip,    // Sẵn sàng giao
   shipping,       // Đang giao
   delivered,      // Đã giao hàng
   completed,      // Hoàn thành
@@ -17,8 +15,6 @@ extension OrderStatusExtension on OrderStatus {
     switch (this) {
       case OrderStatus.pending: return 'Chờ xác nhận';
       case OrderStatus.accepted: return 'Đã xác nhận';
-      case OrderStatus.preparing: return 'Đang chuẩn bị';
-      case OrderStatus.readyToShip: return 'Sẵn sàng giao';
       case OrderStatus.shipping: return 'Đang giao';
       case OrderStatus.delivered: return 'Đã giao hàng';
       case OrderStatus.completed: return 'Hoàn thành';
@@ -30,8 +26,7 @@ extension OrderStatusExtension on OrderStatus {
     switch (this) {
       case OrderStatus.pending: return Colors.orange;
       case OrderStatus.accepted: return Colors.blue;
-      case OrderStatus.preparing: return Colors.indigo;
-      case OrderStatus.readyToShip: return Colors.cyan;
+
       case OrderStatus.shipping: return Colors.purple;
       case OrderStatus.delivered: return Colors.green;
       case OrderStatus.completed: return Colors.grey;

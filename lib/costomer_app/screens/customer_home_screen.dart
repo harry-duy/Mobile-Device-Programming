@@ -13,6 +13,8 @@ class CustomerHomeScreen extends StatefulWidget {
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   int _selectedIndex = 0;
 
+  final List<Map<String, dynamic>> cartItems = [];
+
   // Danh sách các tab màn hình
   final List<Widget> _pages = [
     const ProductListScreen(),
@@ -30,7 +32,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             icon: const Icon(Icons.shopping_cart),
             onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CartScreen())
+                MaterialPageRoute(
+                  builder: (context) => CartScreen(cartItems: cartItems),
+                )
+
             ),
           )
         ],
