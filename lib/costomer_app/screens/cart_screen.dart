@@ -3,7 +3,12 @@ import '../../services/firebase_service.dart';
 
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  final List<Map<String, dynamic>> cartItems;
+
+  const CartScreen({
+    super.key,
+    required this.cartItems,
+  });
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -14,28 +19,27 @@ class _CartScreenState extends State<CartScreen> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  // Giả sử đây là danh sách sản phẩm tạm thời trong giỏ hàng
-  // Trong thực tế, bạn nên dùng Provider để quản lý danh sách này
-  final List<Map<String, dynamic>> _cartItems = [
-    {
-      "id": "p1",
-      "name": "Phở bò",
-      "price": 45000.0,
-      "quantity": 2,
-    },
-    {
-      "id": "p2",
-      "name": "Bún chả",
-      "price": 40000.0,
-      "quantity": 1,
-    }
-  ];
-
   double get _totalAmount {
-    return _cartItems.fold(0, (sum, item) => sum + (item['price'] * item['quantity']));
+    return widget.cartItems.fold(
+      0,
+          (sum, item) => sum + (item['price'] * item['quantity']),
+    );
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      widget.cartItems.removeAt(index);
+    });
   }
 
   void _handleCheckout() async {
+    if (widget.cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Giỏ hàng đang trống")),
+      );
+      return;
+    }
+
     if (_addressController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Vui lòng nhập địa chỉ giao hàng")),
@@ -44,13 +48,20 @@ class _CartScreenState extends State<CartScreen> {
     }
 
     try {
-      // Fix lỗi: Sử dụng Named Parameters để khớp với FirebaseService
+      // Khi Firebase xong thì bật lại
+      /*
       await _firebaseService.placeOrder(
         address: _addressController.text,
-        items: _cartItems,
+        items: widget.cartItems,
         total: _totalAmount,
         notes: _notesController.text,
       );
+      */
+
+      // Clear cart sau khi đặt
+      setState(() {
+        widget.cartItems.clear();
+      });
 
       if (!mounted) return;
 
@@ -58,7 +69,6 @@ class _CartScreenState extends State<CartScreen> {
         const SnackBar(content: Text("Đặt hàng thành công!")),
       );
 
-      // Xóa giỏ hàng và quay về trang chủ
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,14 +88,24 @@ class _CartScreenState extends State<CartScreen> {
         children: [
           Expanded(
             child: ListView.builder(
-              itemCount: _cartItems.length,
+              itemCount: widget.cartItems.length,
               itemBuilder: (context, index) {
-                final item = _cartItems[index];
+                final item = widget.cartItems[index];
                 return ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.fastfood)),
                   title: Text(item['name']),
-                  subtitle: Text("${item['quantity']} x ${item['price']} VNĐ"),
-                  trailing: Text("${item['quantity'] * item['price']} VNĐ"),
+                  subtitle:
+                  Text("${item['quantity']} x ${item['price']} VNĐ"),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("${item['quantity'] * item['price']} VNĐ"),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _removeItem(index),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -127,14 +147,15 @@ class _CartScreenState extends State<CartScreen> {
                   children: [
                     const Text(
                       "Tổng thanh toán:",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       "$_totalAmount VNĐ",
                       style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
                       ),
                     ),
                   ],
