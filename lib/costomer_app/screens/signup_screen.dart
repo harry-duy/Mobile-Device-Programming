@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import 'customer_home_screen.dart';
+import '../../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -48,12 +48,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    // Gọi hàm đăng ký từ Provider
+    // --- LOGIC TẠO ADMIN TẠM THỜI ---
+    UserRole roleToRegister = UserRole.customer;
+    String emailInput = _emailController.text.trim().toLowerCase();
+
+    // Nếu email bắt đầu bằng 'admin' (ví dụ: admin1@gmail.com), set quyền là Admin
+    if (emailInput.startsWith('admin')) {
+      roleToRegister = UserRole.admin;
+    }
+    // --------------------------------
+
     final success = await authProvider.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
+      role: roleToRegister, // <--- Truyền role vào đây
     );
 
     if (!mounted) return;

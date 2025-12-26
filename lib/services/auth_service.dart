@@ -36,11 +36,11 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get current user
+  // Lấy user hiện tại
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ĐĂNG KÝ (Logic đã sửa để lưu tên ngay lập tức)
+  // ĐĂNG KÝ
   Future<UserCredential?> signUp({
     required String email,
     required String password,
@@ -49,19 +49,19 @@ class AuthService {
     UserRole role = UserRole.customer,
   }) async {
     try {
-      // 1. Tạo user
+      // 1. Tạo tài khoản Authentication
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // 2. CẬP NHẬT TÊN NGAY (Quan trọng)
+      // 2. Cập nhật tên hiển thị ngay lập tức
       if (credential.user != null) {
         await credential.user!.updateDisplayName(name);
-        await credential.user!.reload(); // Load lại user để cập nhật
+        await credential.user!.reload();
       }
 
-      // 3. Lưu vào Firestore (Nếu lỗi ở đây thì tên vẫn đã được lưu ở bước 2)
+      // 3. Lưu thông tin vào Firestore
       await _firestore.collection('users').doc(credential.user!.uid).set({
         'email': email,
         'name': name,
@@ -96,7 +96,7 @@ class AuthService {
     await _auth.signOut();
   }
 
-  // LẤY PROFILE
+  // LẤY THÔNG TIN PROFILE
   Future<UserProfile?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
@@ -110,7 +110,7 @@ class AuthService {
     }
   }
 
-  // RESET PASS
+  // QUÊN MẬT KHẨU
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);

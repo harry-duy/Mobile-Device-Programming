@@ -39,12 +39,13 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  // Hàm này PHẢI trả về Future<bool> để màn hình SignUpScreen sử dụng
+  // Hàm Đăng Ký
   Future<bool> signUp({
     required String email,
     required String password,
     required String name,
     required String phone,
+    UserRole role = UserRole.customer, // <--- 1. Thêm tham số này
   }) async {
     try {
       _status = AuthStatus.authenticating;
@@ -55,17 +56,19 @@ class AuthProvider extends ChangeNotifier {
         password: password,
         name: name,
         phone: phone,
+        role: role, // <--- 2. Truyền role xuống Service
       );
 
-      return true; // Trả về true nếu thành công
+      return true;
     } catch (e) {
       _status = AuthStatus.unauthenticated;
       _errorMessage = e.toString();
       notifyListeners();
-      return false; // Trả về false nếu lỗi
+      return false;
     }
   }
 
+  // Hàm Đăng Nhập
   Future<bool> signIn({required String email, required String password}) async {
     try {
       _status = AuthStatus.authenticating;
