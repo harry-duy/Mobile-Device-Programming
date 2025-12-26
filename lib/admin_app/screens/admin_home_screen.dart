@@ -71,7 +71,7 @@ class AdminHomeScreen extends StatelessWidget {
                                 selected: order.status == status,
                                 onSelected: (selected) {
                                   if (selected) {
-                                    service.updateOrderStatus(order.id, status.name);
+                                    service. updateOrderStatus(order.id, status.name);
                                   }
                                 },
                               );

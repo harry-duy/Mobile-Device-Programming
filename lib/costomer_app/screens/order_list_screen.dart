@@ -53,7 +53,11 @@ class OrderListScreen extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
+
                     color: order.status.color.withOpacity(0.1),
+
+                    color: order.status.color.withValues(alpha: 0.1),
+
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -78,7 +82,11 @@ class OrderListScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
+
                         color: order.status.color.withOpacity(0.2),
+
+                        color: order.status.color.withValues(alpha: 0.1),
+
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -261,6 +269,9 @@ class OrderListScreen extends StatelessWidget {
         return Icons.access_time;
       case OrderStatus.accepted:
         return Icons.check;
+      case OrderStatus.preparing:
+        return Icons.kitchen;
+      case OrderStatus.readyToShip:
         return Icons.inventory;
       case OrderStatus.shipping:
         return Icons.delivery_dining;

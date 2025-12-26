@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 enum OrderStatus {
   pending,        // Chờ xác nhận
   accepted,       // Đã xác nhận
+
+=======
+  preparing,      // Đang chuẩn bị
+  readyToShip,    // Sẵn sàng giao
+
   shipping,       // Đang giao
   delivered,      // Đã giao hàng
   completed,      // Hoàn thành
@@ -15,6 +20,8 @@ extension OrderStatusExtension on OrderStatus {
     switch (this) {
       case OrderStatus.pending: return 'Chờ xác nhận';
       case OrderStatus.accepted: return 'Đã xác nhận';
+      case OrderStatus.preparing: return 'Đang chuẩn bị';
+      case OrderStatus.readyToShip: return 'Sẵn sàng giao';
       case OrderStatus.shipping: return 'Đang giao';
       case OrderStatus.delivered: return 'Đã giao hàng';
       case OrderStatus.completed: return 'Hoàn thành';
@@ -26,6 +33,11 @@ extension OrderStatusExtension on OrderStatus {
     switch (this) {
       case OrderStatus.pending: return Colors.orange;
       case OrderStatus.accepted: return Colors.blue;
+
+
+
+      case OrderStatus.preparing: return Colors.indigo;
+      case OrderStatus.readyToShip: return Colors.cyan;
 
       case OrderStatus.shipping: return Colors.purple;
       case OrderStatus.delivered: return Colors.green;
@@ -60,6 +72,7 @@ class Product {
       description: data['description'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
       isAvailable: data['isAvailable'] ?? true,
+
     );
   }
 
@@ -95,11 +108,50 @@ class ShipperInfo {
       name: data['name'] ?? '',
       phone: data['phone'] ?? '',
       vehicleNumber: data['vehicleNumber'] ?? '',
+
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+
+
+      'name': name,
+      'price': price,
+      'description': description,
+      'imageUrl': imageUrl,
+      'isAvailable': isAvailable,
+    };
+  }
+}
+
+class ShipperInfo {
+  final String id;
+  final String name;
+  final String phone;
+  final String vehicleNumber;
+
+  ShipperInfo({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.vehicleNumber,
+  });
+
+  factory ShipperInfo.fromMap(Map<String, dynamic>? data) {
+    if (data == null) return ShipperInfo.empty();
+
+    return ShipperInfo(
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      phone: data['phone'] ?? '',
+      vehicleNumber: data['vehicleNumber'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+
       'id': id,
       'name': name,
       'phone': phone,

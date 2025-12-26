@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+
 import 'costomer_app/main_customer.dart' as customer;
 import 'admin_app/main_admin.dart' as admin;
+
+import 'package:provider/provider.dart';
+import 'providers/cart_provider.dart';
+import 'providers/auth_provider.dart';
+import 'costomer_app/screens/login_screen.dart';
+import 'costomer_app/screens/customer_home_screen.dart';
+import 'admin_app/screens/admin_home_screen.dart'; // <--- 1. THÊM DÒNG NÀY
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +23,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Food Delivery System',
@@ -184,6 +194,49 @@ class RoleSelectionScreen extends StatelessWidget {
           ],
         ),
       ),
+=======
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Food Delivery System',
+        theme: ThemeData(
+          primarySwatch: Colors.orange,
+          useMaterial3: true,
+        ),
+        home: const AuthWrapper(),
+      ),
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        if (authProvider.status == AuthStatus.uninitialized) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (authProvider.isAuthenticated) {
+          // 2. THÊM LOGIC KIỂM TRA QUYỀN ADMIN
+          if (authProvider.isAdmin) {
+            return const AdminHomeScreen();
+          }
+          return const CustomerHomeScreen();
+        }
+
+        return const LoginScreen();
+      },
+
     );
   }
 }
