@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'main.dart'; // Import để dùng AuthWrapper
+import 'auth_wrapper.dart'; // <--- Import file vừa tạo ở bước 1
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,23 +13,24 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Đợi 3 giây rồi chuyển sang màn hình kiểm tra đăng nhập
+    // Đợi 3 giây rồi chuyển sang AuthWrapper
     Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AuthWrapper()),
-      );
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()), // Hết lỗi đỏ
+        );
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.orange, // Màu chủ đạo
+      backgroundColor: Colors.orange,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo (Bạn có thể thay bằng Image.asset nếu có ảnh)
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
@@ -47,11 +48,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white,
                 letterSpacing: 1.5,
               ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Món ngon tận nơi',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
             const SizedBox(height: 40),
             const CircularProgressIndicator(color: Colors.white),

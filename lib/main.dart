@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'providers/cart_provider.dart';
+
+// --- IMPORT CÁC PROVIDER ---
 import 'providers/auth_provider.dart';
-import 'costomer_app/screens/login_screen.dart';
-import 'costomer_app/screens/customer_home_screen.dart';
-import 'admin_app/screens/admin_home_screen.dart';
-import 'splash_screen.dart';
+import 'providers/cart_provider.dart'; // Nếu bạn chưa có file này thì comment dòng này lại
+import 'providers/theme_provider.dart'; // <--- Quan trọng để sửa lỗi màn hình đỏ
+
+// --- IMPORT MÀN HÌNH ---
+import 'splash_screen.dart'; // Màn hình chờ (đã tạo ở các bước trước)
 
 void main() async {
+  // 1. Khởi tạo Flutter Binding
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Khởi tạo Firebase (Kết nối Database)
   await Firebase.initializeApp();
+
+  // 3. Chạy ứng dụng
   runApp(const MyApp());
 }
 
@@ -19,47 +26,42 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 4. Bọc toàn bộ ứng dụng trong MultiProvider
+    // Giúp tất cả các màn hình con đều truy cập được dữ liệu (Auth, Cart, Theme)
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => CartProvider()),
+        // Provider quản lý Đăng nhập/Đăng ký
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        // Provider quản lý Giỏ hàng (Member 1 làm)
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+
+        // Provider quản lý Giao diện Sáng/Tối (Sửa lỗi màn hình đỏ tại đây)
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Food Delivery System',
-        theme: ThemeData(
-          primarySwatch: Colors.orange,
-          useMaterial3: true,
-        ),
-        home: const SplashScreen(), // <--- Sửa dòng này
-      ),
+      child: const AppContent(),
     );
   }
 }
 
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+// Tách ra widget con để lắng nghe ThemeProvider
+class AppContent extends StatelessWidget {
+  const AppContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.status == AuthStatus.uninitialized) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    // Lấy theme từ Provider để cập nhật toàn bộ app
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
-        if (authProvider.isAuthenticated) {
-          // 2. THÊM LOGIC KIỂM TRA QUYỀN ADMIN
-          if (authProvider.isAdmin) {
-            return const AdminHomeScreen();
-          }
-          return const CustomerHomeScreen();
-        }
+    return MaterialApp(
+      debugShowCheckedModeBanner: false, // Tắt chữ DEBUG ở góc phải
+      title: 'Food Delivery System',
 
-        return const LoginScreen();
-      },
+      // Thiết lập Theme (Sáng hoặc Tối) dựa trên cài đặt của người dùng
+      theme: themeProvider.currentTheme,
+
+      // Màn hình đầu tiên khi mở app
+      home: const SplashScreen(),
     );
   }
 }

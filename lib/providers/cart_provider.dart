@@ -1,41 +1,81 @@
-import 'package:flutter/foundation.dart';
-import '../models/models.dart';
+import 'package:flutter/material.dart';
 
 class CartItem {
-  final Product product;
-  int quantity;
+  final String id;
+  final String title;
+  final int quantity;
+  final double price;
+  final String imageUrl;
 
-  CartItem({required this.product, this.quantity = 1});
-
-  double get totalPrice => product.price * quantity;
+  CartItem({
+    required this.id,
+    required this.title,
+    required this.quantity,
+    required this.price,
+    required this.imageUrl,
+  });
 }
 
-class CartProvider extends ChangeNotifier {
+class CartProvider with ChangeNotifier {
   final Map<String, CartItem> _items = {};
 
-  Map<String, CartItem> get items => {..._items};
+  Map<String, CartItem> get items => _items;
 
-  int get itemCount => _items.length;
-
-  int get totalQuantity {
-    return _items.values.fold(0, (sum, item) => sum + item.quantity);
+  // Lấy tổng số lượng sản phẩm để hiện lên chấm đỏ
+  int get itemCount {
+    return _items.length;
   }
 
   double get totalAmount {
-    return _items.values.fold(0.0, (sum, item) => sum + item.totalPrice);
+    var total = 0.0;
+    _items.forEach((key, cartItem) {
+      total += cartItem.price * cartItem.quantity;
+    });
+    return total;
   }
 
-  bool isInCart(String productId) {
-    return _items.containsKey(productId);
-  }
-
-  void addItem(Product product, {int quantity = 1}) {
-    if (_items.containsKey(product.id)) {
-      // Nếu đã có trong giỏ, tăng số lượng
-      _items[product.id]!.quantity += quantity;
+  void addItem(String productId, double price, String title, String imageUrl) {
+    if (_items.containsKey(productId)) {
+      // Nếu đã có -> Tăng số lượng
+      _items.update(
+        productId,
+            (existingCartItem) => CartItem(
+          id: existingCartItem.id,
+          title: existingCartItem.title,
+          price: existingCartItem.price,
+          quantity: existingCartItem.quantity + 1,
+          imageUrl: existingCartItem.imageUrl,
+        ),
+      );
     } else {
-      // Thêm mới vào giỏ
-      _items[product.id] = CartItem(product: product, quantity: quantity);
+      // Chưa có -> Thêm mới
+      _items.putIfAbsent(
+        productId,
+            () => CartItem(
+          id: DateTime.now().toString(),
+          title: title,
+          price: price,
+          quantity: 1,
+          imageUrl: imageUrl,
+        ),
+      );
+    }
+    notifyListeners();
+  }
+
+  void removeSingleItem(String productId) {
+    if (!_items.containsKey(productId)) return;
+    if (_items[productId]!.quantity > 1) {
+      _items.update(
+          productId,
+              (existingCartItem) => CartItem(
+              id: existingCartItem.id,
+              title: existingCartItem.title,
+              price: existingCartItem.price,
+              quantity: existingCartItem.quantity - 1,
+              imageUrl: existingCartItem.imageUrl));
+    } else {
+      _items.remove(productId);
     }
     notifyListeners();
   }
@@ -45,49 +85,8 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateQuantity(String productId, int newQuantity) {
-    if (!_items.containsKey(productId)) return;
-
-    if (newQuantity <= 0) {
-      removeItem(productId);
-    } else {
-      _items[productId]!.quantity = newQuantity;
-      notifyListeners();
-    }
-  }
-
-  void increaseQuantity(String productId) {
-    if (_items.containsKey(productId)) {
-      _items[productId]!.quantity++;
-      notifyListeners();
-    }
-  }
-
-  void decreaseQuantity(String productId) {
-    if (!_items.containsKey(productId)) return;
-
-    if (_items[productId]!.quantity > 1) {
-      _items[productId]!.quantity--;
-    } else {
-      removeItem(productId);
-    }
-    notifyListeners();
-  }
-
   void clear() {
     _items.clear();
     notifyListeners();
-  }
-
-  // Convert cart items cho Firebase
-  List<Map<String, dynamic>> getCartItemsForOrder() {
-    return _items.values.map((item) {
-      return {
-        'id': item.product.id,
-        'name': item.product.name,
-        'price': item.product.price,
-        'quantity': item.quantity,
-      };
-    }).toList();
   }
 }

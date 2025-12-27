@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/address_service.dart'; // <--- Import đúng
+import '../../../services/address_service.dart';
 import 'add_edit_address_screen.dart';
 
 class AddressListScreen extends StatelessWidget {
@@ -8,18 +8,18 @@ class AddressListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AddressService addressService = AddressService();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sổ địa chỉ'),
-        backgroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: Colors.orange),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddEditAddressScreen()),
-            ),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditAddressScreen())),
           )
         ],
       ),
@@ -29,15 +29,21 @@ class AddressListScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Chưa có địa chỉ nào'),
-                  TextButton(
+                  Icon(Icons.location_off_outlined, size: 80, color: Colors.grey.shade600),
+                  const SizedBox(height: 16),
+                  Text('Chưa có địa chỉ nào', style: TextStyle(color: textColor, fontSize: 16)),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditAddressScreen())),
-                    child: const Text('Thêm ngay', style: TextStyle(color: Colors.orange)),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Thêm ngay'),
                   )
                 ],
               ),
@@ -46,33 +52,45 @@ class AddressListScreen extends StatelessWidget {
 
           final addresses = snapshot.data!;
           return ListView.separated(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             itemCount: addresses.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final addr = addresses[index];
               return Card(
+                color: cardColor, // Màu nền thẻ động
                 elevation: addr.isDefault ? 2 : 0,
                 shape: RoundedRectangleBorder(
                   side: addr.isDefault ? const BorderSide(color: Colors.orange) : BorderSide.none,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   title: Row(
                     children: [
-                      Text(addr.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(addr.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
                       if (addr.isDefault)
                         Container(
                           margin: const EdgeInsets.only(left: 10),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(4)),
-                          child: const Text('Mặc định', style: TextStyle(fontSize: 10, color: Colors.orange)),
+                          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                          child: const Text('Mặc định', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
                         )
                     ],
                   ),
-                  subtitle: Text("${addr.phone}\n${addr.detail}"),
-                  isThreeLine: true,
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(addr.phone, style: TextStyle(color: textColor.withOpacity(0.7))),
+                        const SizedBox(height: 4),
+                        Text(addr.detail, style: TextStyle(color: textColor.withOpacity(0.7))),
+                      ],
+                    ),
+                  ),
                   trailing: PopupMenuButton(
+                    icon: Icon(Icons.more_vert, color: isDarkMode ? Colors.grey : Colors.black),
                     onSelected: (value) async {
                       if (value == 'edit') {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditAddressScreen(address: addr)));
@@ -83,8 +101,7 @@ class AddressListScreen extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      if (!addr.isDefault)
-                        const PopupMenuItem(value: 'default', child: Text('Đặt làm mặc định')),
+                      if (!addr.isDefault) const PopupMenuItem(value: 'default', child: Text('Đặt làm mặc định')),
                       const PopupMenuItem(value: 'edit', child: Text('Chỉnh sửa')),
                       const PopupMenuItem(value: 'delete', child: Text('Xóa', style: TextStyle(color: Colors.red))),
                     ],

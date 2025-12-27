@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/address_service.dart'; // <--- Import đúng đường dẫn
+import '../../../services/address_service.dart';
 
 class AddEditAddressScreen extends StatefulWidget {
   final AddressModel? address;
@@ -16,7 +16,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
   final _phoneController = TextEditingController();
   final _detailController = TextEditingController();
   bool _isDefault = false;
-  final AddressService _addressService = AddressService(); // Đã import được class này
+  final AddressService _addressService = AddressService();
 
   @override
   void initState() {
@@ -31,7 +31,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
 
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
-
     await _addressService.saveAddress(
       id: widget.address?.id,
       name: _nameController.text,
@@ -39,55 +38,92 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen> {
       detail: _detailController.text,
       isDefault: _isDefault,
     );
-
     if (mounted) Navigator.pop(context);
+  }
+
+  // Hàm tạo Input Decoration chung cho đẹp
+  InputDecoration _buildDecoration(String label, IconData icon, bool isDarkMode) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: Colors.orange),
+      labelStyle: TextStyle(color: isDarkMode ? Colors.grey : Colors.grey.shade700),
+      filled: true,
+      fillColor: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade50, // Màu nền input
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300), // Viền mờ
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.orange, width: 2),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.address == null ? 'Thêm địa chỉ mới' : 'Sửa địa chỉ'),
-        backgroundColor: Colors.white,
+        title: Text(widget.address == null ? 'Thêm địa chỉ' : 'Sửa địa chỉ'),
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Tên gợi nhớ (VD: Nhà riêng)'),
-                validator: (v) => v!.isEmpty ? 'Nhập tên gợi nhớ' : null,
+                style: TextStyle(color: textColor),
+                decoration: _buildDecoration('Tên gợi nhớ (VD: Nhà riêng)', Icons.label_outline, isDarkMode),
+                validator: (v) => v!.isEmpty ? 'Vui lòng nhập tên' : null,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+
               TextFormField(
                 controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Số điện thoại'),
+                style: TextStyle(color: textColor),
                 keyboardType: TextInputType.phone,
-                validator: (v) => v!.isEmpty ? 'Nhập SĐT' : null,
+                decoration: _buildDecoration('Số điện thoại nhận hàng', Icons.phone_android, isDarkMode),
+                validator: (v) => v!.isEmpty ? 'Vui lòng nhập SĐT' : null,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+
               TextFormField(
                 controller: _detailController,
-                decoration: const InputDecoration(labelText: 'Địa chỉ chi tiết'),
-                validator: (v) => v!.isEmpty ? 'Nhập địa chỉ' : null,
+                style: TextStyle(color: textColor),
+                maxLines: 3,
+                decoration: _buildDecoration('Địa chỉ chi tiết (Số nhà, đường...)', Icons.location_on_outlined, isDarkMode),
+                validator: (v) => v!.isEmpty ? 'Vui lòng nhập địa chỉ' : null,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+
+              // Công tắc gạt
               SwitchListTile(
-                title: const Text('Đặt làm địa chỉ mặc định'),
+                contentPadding: EdgeInsets.zero,
+                title: Text('Đặt làm địa chỉ mặc định', style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
                 value: _isDefault,
-                activeColor: Colors.orange, // Đã fix warning bằng cách dùng activeColor bình thường
+                activeColor: Colors.orange,
                 onChanged: (val) => setState(() => _isDefault = val),
               ),
-              const SizedBox(height: 20),
+
+              const SizedBox(height: 30),
+
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: _save,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                  child: const Text('Lưu Địa Chỉ', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('LƯU ĐỊA CHỈ', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
