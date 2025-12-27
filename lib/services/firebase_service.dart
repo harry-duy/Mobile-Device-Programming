@@ -33,6 +33,51 @@ class FirebaseService {
     });
   }
 
+  // Hàm lấy thống kê cho Admin Dashboard
+  Future<Map<String, dynamic>> getOrderStatistics() async {
+    try {
+      // 1. Lấy tất cả tài liệu từ collection 'orders'
+      QuerySnapshot snapshot = await _db.collection('orders').get();
+
+      int totalOrders = snapshot.docs.length;
+      double totalRevenue = 0;
+      int pendingOrders = 0;
+      int completedOrders = 0;
+
+      // 2. Duyệt qua từng đơn hàng để tính toán
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+        // Cộng dồn doanh thu (sử dụng trường 'totalAmount' bạn đã định nghĩa trong hàm placeOrder)
+        totalRevenue += (data['totalAmount'] ?? 0).toDouble();
+
+        // Đếm trạng thái đơn hàng
+        String status = data['status'] ?? 'pending';
+        if (status == 'pending') {
+          pendingOrders++;
+        } else if (status == 'completed') {
+          completedOrders++;
+        }
+      }
+
+      // 3. Trả về kết quả dưới dạng Map
+      return {
+        'totalOrders': totalOrders,
+        'totalRevenue': totalRevenue,
+        'pendingOrders': pendingOrders,
+        'completedOrders': completedOrders,
+      };
+    } catch (e) {
+      print("Lỗi khi lấy thống kê: $e");
+      return {
+        'totalOrders': 0,
+        'totalRevenue': 0.0,
+        'pendingOrders': 0,
+        'completedOrders': 0,
+      };
+    }
+  }
+
   // Admin: Lấy TẤT CẢ đơn hàng (Dùng trong admin_home_screen.dart)
   Stream<QuerySnapshot> getAllOrders() {
     return _db.collection('orders')
