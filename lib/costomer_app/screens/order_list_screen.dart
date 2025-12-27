@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
-import '../../services/firebase_service.dart';
-import '../../models/models.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/order_model.dart';
+import 'order_tracking_screen.dart';
 
 class OrderListScreen extends StatelessWidget {
   const OrderListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final FirebaseService service = FirebaseService();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: service.getCustomerOrders(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return Scaffold(
+      appBar: AppBar(title: const Text('Lịch sử đơn hàng'), backgroundColor: Colors.white),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('orders')
+            .where('userId', isEqualTo: uid)
+            .orderBy('date', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
@@ -144,178 +151,56 @@ class OrderListScreen extends StatelessWidget {
                         if (order.customerPhone.isNotEmpty)
                           _buildInfoRow(Icons.phone, order.customerPhone),
 
-                        // Thông tin shipper nếu có
-                        if (order.shipperInfo != null &&
-                            !order.shipperInfo!.isEmpty) ...[
-                          const Divider(height: 24),
-                          _buildSectionTitle("Thông tin người giao hàng"),
-                          _buildInfoRow(
-                              Icons.person, order.shipperInfo!.name),
-                          _buildInfoRow(
-                              Icons.phone, order.shipperInfo!.phone),
-                          if (order.shipperInfo!.vehicleNumber.isNotEmpty)
-                            _buildInfoRow(Icons.motorcycle,
-                                order.shipperInfo!.vehicleNumber),
-                        ],
 
-                        // Ghi chú
-                        if (order.notes != null && order.notes!.isNotEmpty) ...[
-                          const Divider(height: 24),
-                          _buildSectionTitle("Ghi chú"),
-                          Text(order.notes!,
-                              style: TextStyle(color: Colors.grey.shade700)),
-                        ],
+          final docs = snapshot.data!.docs; // Lấy danh sách ra biến cho gọn
 
-                        // Nút xác nhận đã nhận hàng
-                        if (order.status == OrderStatus.delivered) ...[
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              onPressed: () => _confirmReceived(
-                                  context, service, order.id),
-                              icon: const Icon(Icons.check_circle),
-                              label: const Text(
-                                "XÁC NHẬN ĐÃ NHẬN HÀNG",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final order = OrderModel.fromFirestore(docs[index]);
 
-                        // Hiển thị thời gian hoàn thành
-                        if (order.status == OrderStatus.completed &&
-                            order.completedAt != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.check_circle,
-                                    color: Colors.green),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    "Hoàn thành lúc ${DateFormat('dd/MM/yyyy HH:mm').format(order.completedAt!)}",
-                                    style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
+              // Màu sắc trạng thái
+              Color statusColor = Colors.grey;
+              String statusText = '';
+              if (order.status == 'pending') {
+                statusColor = Colors.blue;
+                statusText = 'Đang xử lý';
+              } else if (order.status == 'shipping') {
+                statusColor = Colors.orange;
+                statusText = 'Đang giao';
+              } else if (order.status == 'completed') {
+                statusColor = Colors.green;
+                statusText = 'Hoàn thành';
+              }
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text('Đơn hàng #${order.id.substring(0,4).toUpperCase()}'),
+                  subtitle: Text('${order.date.day}/${order.date.month} - ${order.totalPrice}đ'),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      // Fix warning withOpacity bằng cách dùng withAlpha hoặc màu shade nhẹ
+                      color: statusColor.withAlpha(30),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                        statusText,
+                        style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Colors.grey.shade600),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text, style: TextStyle(color: Colors.grey.shade700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getStatusIcon(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return Icons.access_time;
-      case OrderStatus.accepted:
-        return Icons.check;
-      case OrderStatus.preparing:
-        return Icons.kitchen;
-      case OrderStatus.readyToShip:
-        return Icons.inventory;
-      case OrderStatus.shipping:
-        return Icons.delivery_dining;
-      case OrderStatus.delivered:
-        return Icons.home;
-      case OrderStatus.completed:
-        return Icons.check_circle;
-      case OrderStatus.cancelled:
-        return Icons.cancel;
-    }
-  }
-
-  void _confirmReceived(
-      BuildContext context, FirebaseService service, String orderId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Xác nhận nhận hàng"),
-        content: const Text(
-            "Bạn đã nhận được đơn hàng này chưa? Sau khi xác nhận, đơn hàng sẽ được đánh dấu là hoàn thành."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Chưa"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await service.confirmReceived(orderId);
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Cảm ơn bạn! Đơn hàng đã hoàn thành."),
-                  backgroundColor: Colors.green,
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => OrderTrackingScreen(order: order))
+                    );
+                  },
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Đã nhận"),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

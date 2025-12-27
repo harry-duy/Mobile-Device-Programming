@@ -9,7 +9,8 @@ import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
 import 'costomer_app/screens/login_screen.dart';
 import 'costomer_app/screens/customer_home_screen.dart';
-import 'admin_app/screens/admin_home_screen.dart'; // <--- 1. THÊM DÒNG NÀY
+import 'admin_app/screens/admin_home_screen.dart';
+import 'splash_screen.dart';
 
 
 void main() async {
@@ -207,7 +208,7 @@ class RoleSelectionScreen extends StatelessWidget {
           primarySwatch: Colors.orange,
           useMaterial3: true,
         ),
-        home: const AuthWrapper(),
+        home: const SplashScreen(), // <--- Sửa dòng này
       ),
     );
   }

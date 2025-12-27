@@ -8,6 +8,7 @@ class UserProfile {
   final String email;
   final String name;
   final String phone;
+  final String address; // <--- Mới thêm trường này
   final UserRole role;
   final DateTime createdAt;
 
@@ -16,6 +17,7 @@ class UserProfile {
     required this.email,
     required this.name,
     required this.phone,
+    this.address = '', // Mặc định là rỗng
     required this.role,
     required this.createdAt,
   });
@@ -26,6 +28,7 @@ class UserProfile {
       email: data['email'] ?? '',
       name: data['name'] ?? '',
       phone: data['phone'] ?? '',
+      address: data['address'] ?? '', // <--- Đọc địa chỉ từ Firebase
       role: data['role'] == 'admin' ? UserRole.admin : UserRole.customer,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -36,7 +39,6 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Lấy user hiện tại
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -49,23 +51,21 @@ class AuthService {
     UserRole role = UserRole.customer,
   }) async {
     try {
-      // 1. Tạo tài khoản Authentication
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // 2. Cập nhật tên hiển thị ngay lập tức
       if (credential.user != null) {
         await credential.user!.updateDisplayName(name);
         await credential.user!.reload();
       }
 
-      // 3. Lưu thông tin vào Firestore
       await _firestore.collection('users').doc(credential.user!.uid).set({
         'email': email,
         'name': name,
         'phone': phone,
+        'address': '', // Tạo mới chưa có địa chỉ
         'role': role.name,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -96,7 +96,7 @@ class AuthService {
     await _auth.signOut();
   }
 
-  // LẤY THÔNG TIN PROFILE
+  // LẤY PROFILE
   Future<UserProfile?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
@@ -110,7 +110,28 @@ class AuthService {
     }
   }
 
-  // QUÊN MẬT KHẨU
+  // CẬP NHẬT PROFILE (Đã thêm Address)
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String phone,
+    required String address,
+  }) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'name': name,
+        'phone': phone,
+        'address': address,
+      });
+      if (_auth.currentUser != null) {
+        await _auth.currentUser!.updateDisplayName(name);
+      }
+    } catch (e) {
+      print("Lỗi update profile: $e");
+      throw e;
+    }
+  }
+
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -119,15 +140,45 @@ class AuthService {
     }
   }
 
-  // XỬ LÝ LỖI
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use': return 'Email này đã được sử dụng.';
       case 'user-not-found': return 'Không tìm thấy tài khoản.';
       case 'wrong-password': return 'Mật khẩu không đúng.';
-      case 'invalid-email': return 'Email không hợp lệ.';
-      case 'weak-password': return 'Mật khẩu quá yếu.';
       default: return 'Lỗi: ${e.message}';
+    }
+  }
+
+  // --- LOGIC YÊU THÍCH (FAVORITES) ---
+
+  // Lấy danh sách ID yêu thích (Stream realtime)
+  Stream<List<String>> getUserFavorites() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return const Stream.empty();
+
+    return _firestore.collection('users').doc(uid).snapshots().map((snapshot) {
+      if (snapshot.exists && snapshot.data()!.containsKey('favorites')) {
+        return List<String>.from(snapshot.data()!['favorites']);
+      }
+      return [];
+    });
+  }
+
+  // Toggle: Nếu chưa like thì thêm, like rồi thì xóa
+  Future<void> toggleFavorite(String productId, bool isCurrentlyFavorite) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    if (isCurrentlyFavorite) {
+      // Xóa khỏi danh sách
+      await _firestore.collection('users').doc(uid).update({
+        'favorites': FieldValue.arrayRemove([productId])
+      });
+    } else {
+      // Thêm vào danh sách
+      await _firestore.collection('users').doc(uid).update({
+        'favorites': FieldValue.arrayUnion([productId])
+      });
     }
   }
 }

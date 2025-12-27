@@ -39,30 +39,50 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  // Hàm Đăng Ký
+  // ĐĂNG KÝ (Đã fix lỗi thiếu role)
   Future<bool> signUp({
     required String email,
     required String password,
     required String name,
     required String phone,
-    UserRole role = UserRole.customer, // <--- 1. Thêm tham số này
+    UserRole role = UserRole.customer, // <--- THÊM DÒNG NÀY
   }) async {
-    try {
-      _status = AuthStatus.authenticating;
-      notifyListeners();
+    _status = AuthStatus.authenticating;
+    notifyListeners();
 
-      await _authService.signUp(
+    try {
+      // 1. Gọi Service để tạo tài khoản
+      final credential = await _authService.signUp(
         email: email,
         password: password,
         name: name,
         phone: phone,
-        role: role, // <--- 2. Truyền role xuống Service
+        role: role, // <--- Truyền role xuống Service
       );
 
+      // 2. CẬP NHẬT UI NGAY LẬP TỨC
+      if (credential != null && credential.user != null) {
+        _user = credential.user;
+
+        // Tạo hồ sơ giả để hiện tên ngay
+        _userProfile = UserProfile(
+          uid: credential.user!.uid,
+          email: email,
+          name: name,
+          phone: phone,
+          address: '',
+          role: role, // <--- Lưu role vào hồ sơ tạm
+          createdAt: DateTime.now(),
+        );
+      }
+
+      _status = AuthStatus.authenticated;
+      notifyListeners();
       return true;
+
     } catch (e) {
-      _status = AuthStatus.unauthenticated;
       _errorMessage = e.toString();
+      _status = AuthStatus.unauthenticated;
       notifyListeners();
       return false;
     }
@@ -91,6 +111,29 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> resetPassword(String email) async {
     try {
       await _authService.resetPassword(email);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    }
+  }
+
+  // Hàm gọi update từ UI
+  Future<bool> updateUserInfo(String name, String phone, String address) async {
+    try {
+      if (_user == null) return false;
+
+      await _authService.updateProfile(
+          uid: _user!.uid,
+          name: name,
+          phone: phone,
+          address: address
+      );
+
+      // Load lại profile mới nhất để UI cập nhật ngay lập tức
+      _userProfile = await _authService.getUserProfile(_user!.uid);
+      notifyListeners();
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
