@@ -39,6 +39,11 @@ class CartScreen extends StatelessWidget {
               itemBuilder: (ctx, i) {
                 final item = cart.items.values.toList()[i];
                 final productId = cart.items.keys.toList()[i];
+
+                // --- LOGIC KIỂM TRA TỒN KHO ---
+                // Nếu số lượng trong giỏ >= tồn kho thực tế -> Đạt giới hạn
+                final isMaxStock = item.quantity >= item.stock;
+
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   color: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
@@ -57,14 +62,29 @@ class CartScreen extends StatelessWidget {
                         width: 120,
                         child: Row(
                           children: [
+                            // NÚT TRỪ (-)
                             IconButton(
                               icon: Icon(Icons.remove_circle_outline, color: isDarkMode ? Colors.white70 : Colors.black54),
                               onPressed: () => cart.removeSingleItem(productId),
                             ),
+
                             Text('${item.quantity}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+
+                            // NÚT CỘNG (+) - ĐÃ FIX
                             IconButton(
-                              icon: const Icon(Icons.add_circle_outline, color: Colors.orange),
-                              onPressed: () => cart.addItem(productId, item.price, item.title, item.imageUrl),
+                              icon: Icon(Icons.add_circle_outline, color: isMaxStock ? Colors.grey : Colors.orange),
+                              onPressed: () {
+                                if (isMaxStock) {
+                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                    content: Text("Đã đạt giới hạn số lượng trong kho!"),
+                                    duration: Duration(seconds: 1),
+                                  ));
+                                } else {
+                                  // Truyền item.stock vào để Provider lưu trữ
+                                  cart.addItem(productId, item.price, item.title, item.imageUrl, item.stock);
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -104,7 +124,6 @@ class CartScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: cart.totalAmount <= 0 ? null : () {
-                    // Chuyển sang màn hình Checkout để xử lý QR
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const CheckoutScreen()),

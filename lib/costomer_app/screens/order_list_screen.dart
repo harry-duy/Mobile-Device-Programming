@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/order_model.dart';
 import 'order_tracking_screen.dart';
+import 'rate_order_dialog.dart';
 
 class OrderListScreen extends StatelessWidget {
   const OrderListScreen({super.key});
@@ -11,14 +12,13 @@ class OrderListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white; // Màu thẻ bài
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lịch sử đơn hàng'),
         elevation: 0,
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -32,7 +32,6 @@ class OrderListScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            // --- GIAO DIỆN KHI TRỐNG ---
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -51,18 +50,21 @@ class OrderListScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,
             itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final orderId = docs[index].id;
               final order = OrderModel.fromFirestore(docs[index]);
+              final bool isRated = data['isRated'] ?? false;
 
-              // Màu sắc trạng thái
               Color statusColor = Colors.grey;
               String statusText = '';
-              if (order.status == 'pending') { statusColor = Colors.blue; statusText = 'Đang xử lý'; }
-              else if (order.status == 'preparing') { statusColor = Colors.orange; statusText = 'Đang chuẩn bị'; }
+              if (order.status == 'pending') { statusColor = Colors.orange; statusText = 'Chờ xác nhận'; }
+              else if (order.status == 'preparing') { statusColor = Colors.blue; statusText = 'Đang chuẩn bị'; }
               else if (order.status == 'shipping') { statusColor = Colors.purple; statusText = 'Đang giao'; }
               else if (order.status == 'completed') { statusColor = Colors.green; statusText = 'Hoàn thành'; }
+              else if (order.status == 'cancelled') { statusColor = Colors.red; statusText = 'Đã hủy'; }
 
               return Card(
-                color: cardColor, // Tự động đổi màu
+                color: cardColor,
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -97,7 +99,7 @@ class OrderListScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                                '${order.date.day}/${order.date.month}/${order.date.year}',
+                                '${order.date.day}/${order.date.month}/${order.date.year} ${order.date.hour}:${order.date.minute}',
                                 style: TextStyle(color: Colors.grey.shade500, fontSize: 13)
                             ),
                             Text(
@@ -106,14 +108,30 @@ class OrderListScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 5),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            "${order.items.length} món ăn",
-                            style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 13),
-                          ),
-                        )
+
+                        // NÚT ĐÁNH GIÁ
+                        if (order.status == 'completed') ...[
+                          const SizedBox(height: 15),
+                          if (isRated)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                              child: const Center(child: Text("Đã đánh giá ⭐", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+                            )
+                          else
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.star, size: 18),
+                                label: const Text("ĐÁNH GIÁ ĐƠN HÀNG"),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => RateOrderDialog(orderId: orderId, items: order.items)));
+                                },
+                              ),
+                            )
+                        ]
                       ],
                     ),
                   ),

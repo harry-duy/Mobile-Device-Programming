@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // Để mã hóa dữ liệu thành chuỗi JSON
 
 class CartItem {
   final String id;
@@ -6,6 +8,7 @@ class CartItem {
   final int quantity;
   final double price;
   final String imageUrl;
+  final int stock;
 
   CartItem({
     required this.id,
@@ -13,18 +16,40 @@ class CartItem {
     required this.quantity,
     required this.price,
     required this.imageUrl,
+    required this.stock,
   });
+
+  // Chuyển CartItem thành Map để lưu
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'quantity': quantity,
+      'price': price,
+      'imageUrl': imageUrl,
+      'stock': stock,
+    };
+  }
+
+  // Tạo CartItem từ Map khi tải lại
+  factory CartItem.fromMap(Map<String, dynamic> map) {
+    return CartItem(
+      id: map['id'],
+      title: map['title'],
+      quantity: map['quantity'],
+      price: map['price'],
+      imageUrl: map['imageUrl'],
+      stock: map['stock'],
+    );
+  }
 }
 
 class CartProvider with ChangeNotifier {
-  final Map<String, CartItem> _items = {};
+  Map<String, CartItem> _items = {};
 
   Map<String, CartItem> get items => _items;
 
-  // Lấy tổng số lượng sản phẩm để hiện lên chấm đỏ
-  int get itemCount {
-    return _items.length;
-  }
+  int get itemCount => _items.length;
 
   double get totalAmount {
     var total = 0.0;
@@ -34,59 +59,97 @@ class CartProvider with ChangeNotifier {
     return total;
   }
 
-  void addItem(String productId, double price, String title, String imageUrl) {
+  // --- HÀM KHỞI TẠO: TỰ ĐỘNG TẢI GIỎ HÀNG ---
+  CartProvider() {
+    loadCartData();
+  }
+
+  // Thêm món
+  void addItem(String productId, double price, String title, String imageUrl, int maxStock) {
     if (_items.containsKey(productId)) {
-      // Nếu đã có -> Tăng số lượng
+      if (_items[productId]!.quantity >= maxStock) return;
       _items.update(
         productId,
-            (existingCartItem) => CartItem(
-          id: existingCartItem.id,
-          title: existingCartItem.title,
-          price: existingCartItem.price,
-          quantity: existingCartItem.quantity + 1,
-          imageUrl: existingCartItem.imageUrl,
+            (existing) => CartItem(
+          id: existing.id,
+          title: existing.title,
+          price: existing.price,
+          quantity: existing.quantity + 1,
+          imageUrl: existing.imageUrl,
+          stock: maxStock,
         ),
       );
     } else {
-      // Chưa có -> Thêm mới
+      if (maxStock < 1) return;
       _items.putIfAbsent(
         productId,
             () => CartItem(
-          id: DateTime.now().toString(),
+          id: productId,
           title: title,
           price: price,
           quantity: 1,
           imageUrl: imageUrl,
+          stock: maxStock,
         ),
       );
     }
     notifyListeners();
+    saveCartData(); // <--- Lưu ngay sau khi thay đổi
   }
 
+  // Xóa 1 món
   void removeSingleItem(String productId) {
     if (!_items.containsKey(productId)) return;
     if (_items[productId]!.quantity > 1) {
       _items.update(
           productId,
-              (existingCartItem) => CartItem(
-              id: existingCartItem.id,
-              title: existingCartItem.title,
-              price: existingCartItem.price,
-              quantity: existingCartItem.quantity - 1,
-              imageUrl: existingCartItem.imageUrl));
+              (existing) => CartItem(
+              id: existing.id,
+              title: existing.title,
+              price: existing.price,
+              quantity: existing.quantity - 1,
+              imageUrl: existing.imageUrl,
+              stock: existing.stock));
     } else {
       _items.remove(productId);
     }
     notifyListeners();
+    saveCartData(); // <--- Lưu
   }
 
+  // Xóa hẳn món
   void removeItem(String productId) {
     _items.remove(productId);
     notifyListeners();
+    saveCartData(); // <--- Lưu
   }
 
+  // Xóa sạch giỏ (khi đặt hàng xong)
   void clear() {
     _items.clear();
+    notifyListeners();
+    saveCartData(); // <--- Lưu
+  }
+
+  // --- CÁC HÀM LƯU TRỮ ---
+  Future<void> saveCartData() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Chuyển Map _items thành chuỗi JSON
+    final String encodedData = json.encode(
+      _items.map((key, item) => MapEntry(key, item.toMap())),
+    );
+    prefs.setString('user_cart', encodedData);
+  }
+
+  Future<void> loadCartData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey('user_cart')) return;
+
+    final String? extractedUserData = prefs.getString('user_cart');
+    if (extractedUserData == null) return;
+
+    final Map<String, dynamic> decodedData = json.decode(extractedUserData);
+    _items = decodedData.map((key, itemData) => MapEntry(key, CartItem.fromMap(itemData)));
     notifyListeners();
   }
 }
