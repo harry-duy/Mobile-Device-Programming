@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Thư viện lưu trữ
-import '../../providers/auth_provider.dart';
-import 'signup_screen.dart';
+import '../providers/auth_provider.dart';
+import '../Auth/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

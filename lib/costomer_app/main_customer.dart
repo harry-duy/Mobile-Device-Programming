@@ -64,7 +64,6 @@ class _MainCustomerScreenState extends State<MainCustomerScreen> {
     });
   }
 
-  // Hiển thị hộp thoại thông báo đẹp
   void _showNotificationPopup(String title, String body, String docId) {
     // 1. Đánh dấu là đã đọc ngay lập tức để không hiện lại lần sau
     FirebaseFirestore.instance.collection('notifications').doc(docId).update({'isRead': true});

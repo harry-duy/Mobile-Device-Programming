@@ -5,7 +5,6 @@ import '../../providers/auth_provider.dart';
 class EditProfileScreen extends StatefulWidget {
   final String currentName;
   final String currentPhone;
-  // Address có thể chưa có, nên để optional hoặc check null
   final String currentAddress;
 
   const EditProfileScreen({

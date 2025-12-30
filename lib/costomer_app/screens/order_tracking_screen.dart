@@ -41,7 +41,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
 
-  // Hộp thoại đánh giá (Rating Dialog)
+
   void _showRatingDialog() {
     showDialog(
       context: context,
@@ -166,20 +166,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
-                    ),
-                  ),
-
-                // Nút "Giả lập" cho bạn test (Xóa khi deploy thật)
-                if (currentOrder.status != 'completed')
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        // Hack nhẹ để test chuyển trạng thái
-                        FirebaseFirestore.instance.collection('orders').doc(currentOrder.id).update({
-                          'status': 'completed'
-                        });
-                      },
-                      child: const Text('(Test) Bấm để hoàn thành đơn', style: TextStyle(color: Colors.grey)),
                     ),
                   ),
               ],

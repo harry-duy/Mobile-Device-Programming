@@ -48,7 +48,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
       }
     } catch (e) {
-      // Bỏ qua lỗi nếu chưa có địa chỉ
     }
   }
 
