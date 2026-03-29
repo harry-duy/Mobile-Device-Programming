@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Chào mừng bạn quay trở lại!',
+                    'Chào mừng bạn quay lại!',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
@@ -282,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         },
                         child: const Text(
-                          'Đăng ký ngay',
+                          'Tạo tài khoản',
                           style: TextStyle(
                             color: Colors.orange,
                             fontWeight: FontWeight.bold,
