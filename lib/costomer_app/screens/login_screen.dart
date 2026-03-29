@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               });
                             },
                           ),
-                          const Text("Ghi nhớ tôi"),
+                          const Text("Ghi nhớ đăng nhập"),
                         ],
                       ),
 
